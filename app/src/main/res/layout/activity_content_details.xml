@@ -52,13 +52,13 @@
         android:layout_alignParentStart="true"
         android:layout_marginStart="20dp"
         android:layout_marginLeft="20dp"
-        android:textColor="#ffff"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="20dp"
-        android:fontFamily="@font/roboto_thin"
         android:padding="10dp"
+
         android:text="In computer programming, boilerplate is the sections of code that have to be included in many places with little or no alteration. Such boilerplate code is particularly salient when the programmer must include a lot of code for minimal functionality."
-        android:textSize="18sp" />
+        android:textColor="#ffff"
+        android:textSize="20sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/watchlist"
@@ -79,7 +79,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/watchTrailor"
-        android:layout_width="212dp"
+        android:layout_width="214dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/description"
         android:layout_centerHorizontal="true"

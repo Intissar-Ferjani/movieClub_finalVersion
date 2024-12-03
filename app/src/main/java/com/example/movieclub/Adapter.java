@@ -47,27 +47,54 @@ public class Adapter extends RecyclerView.Adapter<Adapter.myViewHolder> {
         return new myViewHolder(view);
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull Adapter.myViewHolder holder, int position) {
-        Log.d("url3", arrayList.get(position).getUrl());
-        if (arrayList.get(position).getUrl() != null) {
-            Log.d("url3", arrayList.get(position).getUrl());
-            Glide.with(context)
-                    .load(arrayList.get(position).getUrl())
-                    .centerCrop()
-                    .into(holder.imageView);
-        }
+//    @Override
+//    public void onBindViewHolder(@NonNull Adapter.myViewHolder holder, int position) {
+//        Log.d("url3", arrayList.get(position).getUrl());
+//        if (arrayList.get(position).getUrl() != null) {
+//            Log.d("url3", arrayList.get(position).getUrl());
+//            Glide.with(context)
+//                    .load(arrayList.get(position).getUrl())
+//                    .centerCrop()
+//                    .into(holder.imageView);
+//        }
+//
+//        holder.imageView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                if (onItemClickListener != null) {
+//                    onItemClickListener.onItemClick(position);
+//                }
+//            }
+//        });
+//    }
+@Override
+public void onBindViewHolder(@NonNull Adapter.myViewHolder holder, int position) {
+    DataClass currentItem = arrayList.get(position);
 
-        holder.imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (onItemClickListener != null) {
-                    onItemClickListener.onItemClick(position);
-                }
-            }
-        });
+    Log.d("ImageDebug", "Hero URL: " + currentItem.getHerourl());
+
+    if (currentItem.getHerourl() != null && !currentItem.getHerourl().isEmpty()) {
+        Glide.with(context)
+                .load(currentItem.getHerourl())
+                .centerCrop()
+
+
+                .into(holder.imageView);
+    } else {
+        Log.e("ImageDebug", "Hero URL is null or empty");
+
     }
 
+    holder.imageView.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            int adapterPosition = holder.getAdapterPosition();
+            if (onItemClickListener != null && adapterPosition != RecyclerView.NO_POSITION) {
+                onItemClickListener.onItemClick(adapterPosition);
+            }
+        }
+    });
+}
     @Override
     public int getItemCount() {
 
