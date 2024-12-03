@@ -17,6 +17,7 @@
         android:fontFamily="@font/roboto_bold"
         android:padding="20dp"
         android:text="My Watchlist"
+        android:textColor="@color/hint_color"
         android:textSize="34sp" />
 
     <androidx.recyclerview.widget.RecyclerView

@@ -13,7 +13,7 @@ public abstract class AppDatabase extends RoomDatabase {
         if (sInstance != null) {
             sInstance.close();
             sInstance = null;
-            context.deleteDatabase("AppDatabase"); // Delete the existing database file
+            context.deleteDatabase("AppDatabase");
         }
     }
 }

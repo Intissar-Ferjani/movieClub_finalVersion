@@ -3,7 +3,7 @@ package com.example.movieclub;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,7 +49,7 @@ public class contentDetails extends AppCompatActivity {
         TextView descriptionView = findViewById(R.id.description);
         ImageView heroImageView = findViewById(R.id.heroimage);
         MaterialButton watchlistButton = findViewById(R.id.watchlist);
-        MaterialButton watchTrailerButton = findViewById(R.id.watchTrailor);
+        MaterialButton watchTrailerButton = findViewById(R.id.watchTrailor); // Added button
 
         titleView.setText(title);
         descriptionView.setText(description);
@@ -83,13 +83,12 @@ public class contentDetails extends AppCompatActivity {
             });
         });
 
+        // Handle watch trailer button click
         watchTrailerButton.setOnClickListener(view -> {
             String trailerUrl = "https://www.youtube.com/results?search_query=" + title + "+trailer";
             Intent trailerIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl));
             startActivity(trailerIntent);
         });
-
-
     }
 
     private void updateWatchlistButton(MaterialButton button, boolean isAdded) {

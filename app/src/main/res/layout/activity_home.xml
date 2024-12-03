@@ -120,6 +120,7 @@
                     android:layout_marginTop="20dp"
                     android:layout_below="@id/quickaccess"
                     android:text="Trending Now"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/trendingtxt"
                     android:textSize="24sp" />
 
@@ -144,6 +145,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Netflix Originals"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/netflixoriginalstxt"
                     android:textSize="24sp" />
 
@@ -168,6 +170,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Top Rated"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/topratedtxt"
                     android:textSize="24sp" />
 
@@ -192,6 +195,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Action Movies"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/actionmoviestxt"
                     android:textSize="24sp" />
 
@@ -217,6 +221,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Comedy Movies"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/comedymoviestxt"
                     android:textSize="24sp" />
 
@@ -241,6 +246,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Horror Movies"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/horrormoviestxt"
                     android:textSize="24sp" />
 
@@ -265,6 +271,7 @@
                     android:fontFamily="@font/roboto_bold"
                     android:padding="10dp"
                     android:text="Romance Movies"
+                    android:textColor="@color/hint_color"
                     android:id="@+id/romancemoviestxt"
                     android:textSize="24sp" />
 

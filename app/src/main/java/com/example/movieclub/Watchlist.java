@@ -83,6 +83,8 @@ public class Watchlist extends AppCompatActivity {
                             public void onItemClick(int position) {
                                 showMovieDetails(arrayList.get(position));
                             }
+
+
                         });
                     }
                 });
@@ -91,9 +93,19 @@ public class Watchlist extends AppCompatActivity {
     }
 
     private void showMovieDetails(DataClass movie) {
-        // Implement the showMovieDetails method similar to the one in Home activity
-        // You may want to create a separate method or class for this functionality
-        // to avoid code duplication
+        // Create an intent to navigate to ContentDetails activity
+        Intent intent = new Intent(Watchlist.this, contentDetails.class);
+
+        // Pass movie data through the intent
+        intent.putExtra("title", movie.getTitle()); // Pass the title of the movie
+        intent.putExtra("description", movie.getDescription()); // Pass the description of the movie
+        intent.putExtra("heroUrl", movie.getHerourl()); // Pass the hero image URL
+        intent.putExtra("addedToWatchlist", true); // Assuming it's already in the watchlist
+        intent.putExtra("movieId", movie.getId()); // Pass the movie ID
+
+        // Start the ContentDetails activity
+        startActivity(intent);
     }
+
 }
 

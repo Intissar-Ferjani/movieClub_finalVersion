@@ -38,14 +38,6 @@ public class Adapter extends RecyclerView.Adapter<Adapter.myViewHolder> {
         this.onItemClickListener = onItemClickListener;
     }
 
-
-
-
-
-
-
-
-
     @NonNull
     @Override
     public Adapter.myViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -66,7 +58,6 @@ public class Adapter extends RecyclerView.Adapter<Adapter.myViewHolder> {
                     .into(holder.imageView);
         }
 
-        // Set click listener for the imageView
         holder.imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

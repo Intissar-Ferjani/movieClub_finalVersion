@@ -1,46 +1,24 @@
 package com.example.movieclub;
 
-import androidx.annotation.NonNull;
+import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
-import androidx.viewpager.widget.ViewPager;
-
-import android.content.Context;
-import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.text.TextUtils;
-import android.transition.Slide;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
@@ -49,7 +27,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -60,175 +37,60 @@ import eightbitlab.com.blurview.RenderScriptBlur;
 
 public class Home extends AppCompatActivity {
 
-    PopupWindow popupWindow, popupWindow1;
-    View v, collectionv;
-    SearchView searchView;
     private AppDatabase database;
     private DAO dao_object;
-    int searchflag = 0, watchlistflag = 0;
-    String query;
-    boolean notify = false;
-    private ViewPager viewPager;
     private TabLayout tabLayout;
     private BlurView bottomBlurView;
-    private ViewGroup blurroot;
+    private RequestQueue queue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        // Initialize the Room database
-        database = Room.databaseBuilder(
-                this,
-                AppDatabase.class,
-                "AppDatabase"
-        ).fallbackToDestructiveMigration().build();
-        dao_object = database.dao();
-
+        initializeDatabase();
+        queue = Volley.newRequestQueue(this);
         initView();
         setupBlurView();
+        setupTabLayout();
+        loadInitialData();
+        setupButtons();
+    }
 
-        loadData("Trending", R.id.trendingRVIEW);
-        loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-        loadData("TopRated", R.id.topratedRVIEW);
-        loadData("ActionMovies", R.id.actionmoviesRVIEW);
-        loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-        loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-        loadData("RomanceMovies", R.id.romancemoviesRVIEW);
+    private void initializeDatabase() {
+        database = Room.databaseBuilder(this, AppDatabase.class, "AppDatabase")
+                .fallbackToDestructiveMigration()
+                .build();
+        dao_object = database.dao();
+    }
 
-        ImageButton profile = findViewById(R.id.profile);
-        MaterialButton movie = findViewById(R.id.movies);
-        MaterialButton tv = findViewById(R.id.tvshows);
+    private void initView() {
+        tabLayout = findViewById(R.id.tabLayout);
+        bottomBlurView = findViewById(R.id.bottomBlurView);
+    }
 
-        movie.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Context context = Home.this;
-                LayoutInflater layoutInflater = LayoutInflater.from(context);
+    private void setupBlurView() {
+        final float radius = 25f;
+        final Drawable windowBackground = getWindow().getDecorView().getBackground();
+        BlurAlgorithm algorithm = getBlurAlgorithm();
 
-                collectionv = layoutInflater.inflate(R.layout.collections, null);
-                TextView t = collectionv.findViewById(R.id.collection);
-                t.setText("Movies");
+        bottomBlurView.setupWith(findViewById(R.id.main), algorithm)
+                .setFrameClearDrawable(windowBackground)
+                .setBlurRadius(radius);
+    }
 
-                popupWindow1 = new PopupWindow(
-                        collectionv,
-                        RelativeLayout.LayoutParams.MATCH_PARENT,
-                        RelativeLayout.LayoutParams.MATCH_PARENT
-                );
-                popupWindow1.setEnterTransition(new Slide());
-                popupWindow1.showAtLocation(collectionv, Gravity.BOTTOM, 0, 0);
-                popupWindow1.setExitTransition(new Slide());
-                int id = R.id.collectionRVIEW;
-                loadData("Movie", id);
-            }
-        });
-
-        tv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Context context = Home.this;
-                LayoutInflater layoutInflater = LayoutInflater.from(context);
-
-                collectionv = layoutInflater.inflate(R.layout.collections, null);
-                TextView t = collectionv.findViewById(R.id.collection);
-                t.setText("TV Shows");
-
-                popupWindow1 = new PopupWindow(collectionv, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                popupWindow1.setEnterTransition(new Slide());
-                popupWindow1.showAtLocation(collectionv, Gravity.BOTTOM, 0, 0);
-                popupWindow1.setExitTransition(new Slide());
-                int id = R.id.collectionRVIEW;
-                loadData("TV", id);
-            }
-        });
-
-        ImageButton search = findViewById(R.id.search);
-        search.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                LayoutInflater inflater = LayoutInflater.from(Home.this);
-                v = inflater.inflate(R.layout.search, null);
-                RelativeLayout root = findViewById(R.id.main);
-                root.addView(v, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                v.setVisibility(View.VISIBLE);
-                searchflag = 1;
-
-                searchView = v.findViewById(R.id.searchbar);
-                searchView.clearFocus();
-                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String localquery) {
-                        query = localquery;
-                        loadData("Search", R.id.searchRVIEW);
-                        return false;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String localquery) {
-                        query = localquery;
-                        loadData("Search", R.id.searchRVIEW);
-                        return false;
-                    }
-                });
-            }
-        });
-
-        profile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Context context = Home.this;
-                LayoutInflater layoutInflater = LayoutInflater.from(context);
-
-                collectionv = layoutInflater.inflate(R.layout.collections, null);
-                TextView t = collectionv.findViewById(R.id.collection);
-                t.setText("Watchlist");
-
-                popupWindow1 = new PopupWindow(collectionv, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                popupWindow1.setEnterTransition(new Slide());
-                popupWindow1.showAtLocation(collectionv, Gravity.BOTTOM, 0, 0);
-                popupWindow1.setExitTransition(new Slide());
-                int id = R.id.collectionRVIEW;
-                ExecutorService service = Executors.newSingleThreadExecutor();
-                service.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        List<DataClass> localData = dao_object.getAll();
-                        ArrayList<DataClass> arrayList = new ArrayList<>(localData);
-                        loadLocalData();
-
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Adapter smalladapter = new Adapter(Home.this, arrayList, R.layout.itemposter_small);
-                                RecyclerView recyclerView = collectionv.findViewById(id);
-                                GridLayoutManager gridLayoutManager = new GridLayoutManager(Home.this, 3);
-                                recyclerView.setLayoutManager(gridLayoutManager);
-                                recyclerView.setAdapter(smalladapter);
-                            }
-                        });
-                    }
-                });
-            }
-        });
-
-        // Set up the profile button
-        ImageButton profileButton = findViewById(R.id.profile);
-        profileButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Home.this, Profile.class);
-                startActivity(intent);
-            }
-        });
-
-        TabLayout mainTab = findViewById(R.id.tabLayout);
-        mainTab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+    private void setupTabLayout() {
+        tabLayout.getTabAt(0).select();
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 int tabIconColor = ContextCompat.getColor(Home.this, R.color.md_theme_light_primary);
                 if (tab.getIcon() != null) {
-                    tab.getIcon().setColorFilter(tabIconColor, PorterDuff.Mode.SRC_IN);
+                    tab.getIcon().setColorFilter(tabIconColor, android.graphics.PorterDuff.Mode.SRC_IN);
+                }
+                if (tab.getPosition() == 1) {
+                    Intent intent = new Intent(Home.this, Watchlist.class);
+                    startActivity(intent);
                 }
             }
 
@@ -236,636 +98,123 @@ public class Home extends AppCompatActivity {
             public void onTabUnselected(TabLayout.Tab tab) {
                 int tabIconColor = ContextCompat.getColor(Home.this, R.color.md_theme_light_onPrimary);
                 if (tab.getIcon() != null) {
-                    tab.getIcon().setColorFilter(tabIconColor, PorterDuff.Mode.SRC_IN);
+                    tab.getIcon().setColorFilter(tabIconColor, android.graphics.PorterDuff.Mode.SRC_IN);
                 }
             }
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-                // Perform any action when the tab is re-selected
+            public void onTabReselected(TabLayout.Tab tab) {}
+        });
+    }
+
+    private void loadInitialData() {
+        loadData("Trending", R.id.trendingRVIEW);
+        loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
+        loadData("TopRated", R.id.topratedRVIEW);
+        loadData("ActionMovies", R.id.actionmoviesRVIEW);
+        loadData("ComedyMovies", R.id.comedymoviesRVIEW);
+        loadData("HorrorMovies", R.id.horrormoviesRVIEW);
+        loadData("RomanceMovies", R.id.romancemoviesRVIEW);
+    }
+
+    private void setupButtons() {
+        ImageButton profile = findViewById(R.id.profile);
+        MaterialButton movie = findViewById(R.id.movies);
+        MaterialButton tv = findViewById(R.id.tvshows);
+        ImageButton search = findViewById(R.id.search);
+
+        profile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Home.this, Profile.class);
+                startActivity(intent);
             }
         });
 
-        TabLayout.Tab homeTab = tabLayout.getTabAt(0);
-        TabLayout.Tab watchlistTab = tabLayout.getTabAt(1);
+        movie.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Home.this, Movie.class);
+                startActivity(intent);
+            }
+        });
 
-        int initcolor = ContextCompat.getColor(Home.this, R.color.md_theme_light_primary);
-        if (homeTab != null && homeTab.getIcon() != null) {
-            homeTab.getIcon().setColorFilter(initcolor, PorterDuff.Mode.SRC_IN);
-        }
-        int initcolor1 = ContextCompat.getColor(Home.this, R.color.md_theme_light_onPrimary);
-        if (watchlistTab != null && watchlistTab.getIcon() != null) {
-            watchlistTab.getIcon().setColorFilter(initcolor1, PorterDuff.Mode.SRC_IN);
-        }
+        tv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Home.this, TVShow.class);
+                startActivity(intent);
+            }
+        });
 
-        // Setting onclick for tab items
-        if (homeTab != null) {
-            homeTab.view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // Clicking on the first tab takes you back to the main activity
-                    if (watchlistflag == 1) {
-                        watchlistflag = 0;
-                        RelativeLayout relativeLayout = findViewById(R.id.watchlistview);
-                        relativeLayout.setVisibility(View.GONE);
-                        Vibrator vb = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                        if (vb != null && vb.hasVibrator()) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                vb.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE));
-                            } else {
-                                vb.vibrate(30);
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Home.this, SearchActivity.class);
+                startActivity(intent);
+            }
+        });
 
-        if (watchlistTab != null) {
-            watchlistTab.view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    RelativeLayout relativeLayout = findViewById(R.id.watchlistview);
-                    relativeLayout.setVisibility(View.VISIBLE);
-                    watchlistflag = 1;
-                    int id = R.id.watchlistRVIEW;
-                    Vibrator vb = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    if (vb != null && vb.hasVibrator()) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            vb.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE));
-                        } else {
-                            vb.vibrate(30);
-                        }
-                    }
-                    ExecutorService service = Executors.newSingleThreadExecutor();
-                    service.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            List<DataClass> localData = dao_object.getAll();
-                            ArrayList<DataClass> arrayList = new ArrayList<>(localData);
-
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Adapter smalladapter = new Adapter(Home.this, arrayList, R.layout.itemposter_small);
-                                    RecyclerView recyclerView = relativeLayout.findViewById(id);
-                                    GridLayoutManager gridLayoutManager = new GridLayoutManager(Home.this, 3);
-                                    recyclerView.setLayoutManager(gridLayoutManager);
-                                    recyclerView.setAdapter(smalladapter);
-                                    smalladapter.setOnItemClickListener(new Adapter.onItemClickListener() {
-                                        @Override
-                                        public void onItemClick(int position) {
-                                            Context context = Home.this;
-                                            Log.d("SmallAdapter", "Item clicked at position: " + position);
-                                            LayoutInflater layoutInflater = LayoutInflater.from(context);
-                                            if (searchflag == 1) {
-                                                if (searchView != null) {
-                                                    searchView.clearFocus();
-                                                }
-                                            }
-                                            View view = layoutInflater.inflate(R.layout.moviedetails, null);
-
-                                            ImageView hero = view.findViewById(R.id.heroimage);
-                                            TextView title = view.findViewById(R.id.title);
-                                            TextView description = view.findViewById(R.id.description);
-                                            String herourl = arrayList.get(position).getHerourl();
-
-                                            MaterialButton button = view.findViewById(R.id.watchlist);
-
-                                            MaterialButton watchTrailerButton = view.findViewById(R.id.watchTrailor);
-
-                                            if (herourl != null && hero != null) {
-                                                Glide.with(view)
-                                                        .load(herourl)
-                                                        .centerCrop()
-                                                        .into(hero);
-                                                title.setText(arrayList.get(position).getTitle());
-                                                description.setText(arrayList.get(position).getDescription());
-                                                DataClass currentData = arrayList.get(position);
-
-                                                if (currentData.isAdded()) {
-                                                    button.setText("Added to Watchlist");
-                                                    int color = getResources().getColor(R.color.md_theme_light_background);
-                                                    int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                    button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                    button.setTextColor(textcolor);
-                                                    button.setIconResource(R.drawable.baseline_check_24);
-                                                    button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                } else {
-                                                    button.setText("Add to Watchlist");
-                                                    int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                    int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                                                    button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                    button.setTextColor(textcolor);
-                                                    button.setIconResource(R.drawable.baseline_star_24);
-                                                    button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                }
-                                                button.setOnClickListener(new View.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(View view) {
-                                                        if (currentData.isAdded()) {
-                                                            ExecutorService service = Executors.newSingleThreadExecutor();
-                                                            service.execute(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    dao_object.deleteDataById(currentData.getKey());
-                                                                    notify = true;
-
-                                                                    runOnUiThread(new Runnable() {
-                                                                        @Override
-                                                                        public void run() {
-                                                                            currentData.setAdded(false);
-                                                                            button.setText("Add to Watchlist");
-                                                                            int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                                            int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                                                                            button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                                            button.setTextColor(textcolor);
-                                                                            button.setIconResource(R.drawable.baseline_star_24);
-                                                                            button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                                            loadData("Trending", R.id.trendingRVIEW);
-                                                                            loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                                            loadData("TopRated", R.id.topratedRVIEW);
-                                                                            loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                                            loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                                            loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                                            loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                                            notify = false;
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                        } else {
-                                                            ExecutorService service = Executors.newSingleThreadExecutor();
-                                                            service.execute(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    currentData.setAdded(true);
-                                                                    dao_object.insertOrUpdate(currentData);
-                                                                    notify = true;
-                                                                    runOnUiThread(new Runnable() {
-                                                                        @Override
-                                                                        public void run() {
-                                                                            button.setText("Added to Watchlist");
-                                                                            int color = getResources().getColor(R.color.md_theme_light_background);
-                                                                            int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                                            button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                                            button.setTextColor(textcolor);
-                                                                            button.setIconResource(R.drawable.baseline_check_24);
-                                                                            button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                                            loadData("Trending", R.id.trendingRVIEW);
-                                                                            loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                                            loadData("TopRated", R.id.topratedRVIEW);
-                                                                            loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                                            loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                                            loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                                            loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                                            notify = false;
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-                                                });
-                                            } else {
-                                                Toast.makeText(context, "Error loading movie details", Toast.LENGTH_SHORT).show();
-                                            }
-
-                                            popupWindow = new PopupWindow(view, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                                            popupWindow.setEnterTransition(new Slide());
-                                            popupWindow.showAtLocation(view, Gravity.BOTTOM, 0, 0);
-                                            popupWindow.setExitTransition(new Slide());
-                                        }
-                                    });
-
-                                    smalladapter.notifyDataSetChanged();
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    private void loadLocalData() {
-        ArrayList<DataClass> arrayList = new ArrayList<>();
-        List<DataClass> localData = dao_object.getAll();
-        arrayList.addAll(localData);
     }
 
     private void loadData(String collection, int rviewid) {
-        RequestQueue queue = Volley.newRequestQueue(this);
-        String API_KEY = BuildConfig.API_KEY;
         ArrayList<DataClass> arrayList = new ArrayList<>();
         Adapter adapter = new Adapter(Home.this, arrayList, R.layout.itemposter);
-        Adapter smalladapter = new Adapter(Home.this, arrayList, R.layout.itemposter_small);
-        RecyclerView recyclerView;
+        RecyclerView recyclerView = findViewById(rviewid);
 
-        GetURL getURL = new GetURL();
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Home.this, LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.setAdapter(adapter);
 
-        String url = getURL.fetch(collection);
-        if (collection.equalsIgnoreCase("Search")) {
-            String searchval = query.toString().trim();
-            String[] words = searchval.split("\\s+");
-            String joined = TextUtils.join("+", words);
-            String newurl = url.replace("+insertquery+", joined);
-            Log.e("srch", newurl);
-            url = newurl;
-            Log.e("srch", url);
-
-            recyclerView = findViewById(rviewid);
-
-            GridLayoutManager gridLayoutManager = new GridLayoutManager(Home.this, 3);
-            recyclerView.setLayoutManager(gridLayoutManager);
-            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-                @Override
-                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                    super.onScrolled(recyclerView, dx, dy);
-                    if (dy > 0) {
-                        searchView.clearFocus();
-                    }
-                }
-            });
-            recyclerView.setAdapter(smalladapter);
-        } else if (collection.equals("Movie") || collection.equals("TV")) {
-            recyclerView = collectionv.findViewById(rviewid);
-            GridLayoutManager gridLayoutManager = new GridLayoutManager(Home.this, 3);
-            recyclerView.setLayoutManager(gridLayoutManager);
-            recyclerView.setAdapter(smalladapter);
-        } else {
-            recyclerView = findViewById(rviewid);
-            LinearLayoutManager linearLayoutManager = new LinearLayoutManager(Home.this, LinearLayoutManager.HORIZONTAL, false);
-            recyclerView.setLayoutManager(linearLayoutManager);
-            recyclerView.setAdapter(adapter);
-        }
-
-        adapter.setOnItemClickListener(new Adapter.onItemClickListener() {
-            @Override
-            public void onItemClick(int position) {
-                Context context = Home.this;
-                LayoutInflater layoutInflater = LayoutInflater.from(context);
-                if (searchflag == 1) {
-                    if (searchView != null) {
-                        searchView.clearFocus();
-                    }
-                }
-                View view = layoutInflater.inflate(R.layout.moviedetails, null);
-
-                ImageView hero = view.findViewById(R.id.heroimage);
-                TextView title = view.findViewById(R.id.title);
-                TextView description = view.findViewById(R.id.description);
-                String herourl = arrayList.get(position).getHerourl();
-                MaterialButton button = view.findViewById(R.id.watchlist);
-
-                MaterialButton watchTrailerButton = view.findViewById(R.id.watchTrailor);
-
-                if (herourl != null && hero != null) {
-                    Glide.with(view)
-                            .load(herourl)
-                            .centerCrop()
-                            .into(hero);
-                    title.setText(arrayList.get(position).getTitle());
-                    description.setText(arrayList.get(position).getDescription());
-                    DataClass currentData = arrayList.get(position);
-                    if (currentData.isAdded()) {
-                        button.setText("Added to Watchlist");
-                        int color = getResources().getColor(R.color.md_theme_light_background);
-                        int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                        button.setBackgroundTintList(ColorStateList.valueOf(color));
-                        button.setTextColor(textcolor);
-                        button.setIconResource(R.drawable.baseline_check_24);
-                        button.setIconTint(ColorStateList.valueOf(textcolor));
-                    } else {
-                        button.setText("Add to Watchlist");
-                        int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                        int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                        button.setBackgroundTintList(ColorStateList.valueOf(color));
-                        button.setTextColor(textcolor);
-                        button.setIconResource(R.drawable.baseline_star_24);
-                        button.setIconTint(ColorStateList.valueOf(textcolor));
-                    }
-                    button.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            if (currentData.isAdded()) {
-                                ExecutorService service = Executors.newSingleThreadExecutor();
-                                service.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        dao_object.deleteDataById(currentData.getKey());
-                                        notify = true;
-
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                currentData.setAdded(false);
-//                                                button.setText("Add to Watchlist");
-                                                int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                                                button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                button.setTextColor(textcolor);
-                                                button.setIconResource(R.drawable.baseline_star_24);
-                                                button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                loadData("Trending", R.id.trendingRVIEW);
-                                                loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                loadData("TopRated", R.id.topratedRVIEW);
-                                                loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                notify = false;
-                                            }
-                                        });
-                                    }
-                                });
-                            } else {
-                                ExecutorService service = Executors.newSingleThreadExecutor();
-                                service.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        currentData.setAdded(true);
-                                        dao_object.insertOrUpdate(currentData);
-                                        notify = true;
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                button.setText("Added to Watchlist");
-                                                int color = getResources().getColor(R.color.md_theme_light_background);
-                                                int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                button.setTextColor(textcolor);
-                                                button.setIconResource(R.drawable.baseline_check_24);
-                                                button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                loadData("Trending", R.id.trendingRVIEW);
-                                                loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                loadData("TopRated", R.id.topratedRVIEW);
-                                                loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                notify = false;
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        }
-                    });
-                } else {
-                    Toast.makeText(context, "Error loading movie details", Toast.LENGTH_SHORT).show();
-                }
-
-                popupWindow = new PopupWindow(view, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                popupWindow.setEnterTransition(new Slide());
-                popupWindow.showAtLocation(view, Gravity.BOTTOM, 0, 0);
-                popupWindow.setExitTransition(new Slide());
-            }
+        adapter.setOnItemClickListener(position -> {
+            DataClass movie = arrayList.get(position);
+            Intent intent = new Intent(Home.this, contentDetails.class);
+            intent.putExtra("title", movie.getTitle());
+            intent.putExtra("description", movie.getDescription());
+            intent.putExtra("heroUrl", movie.getHerourl());
+            intent.putExtra("addedToWatchlist", movie.isAdded());
+            intent.putExtra("movieId", movie.getKey());
+            intent.putExtra("contentType", collection);
+            startActivity(intent);
         });
 
-        smalladapter.setOnItemClickListener(new Adapter.onItemClickListener() {
-            @Override
-            public void onItemClick(int position) {
-                Context context = Home.this;
-                LayoutInflater layoutInflater = LayoutInflater.from(context);
-                if (searchflag == 1) {
-                    if (searchView != null) {
-                        searchView.clearFocus();
-                    }
-                }
-                View view = layoutInflater.inflate(R.layout.moviedetails, null);
+        fetchMovieData(new GetURL().fetch(collection), arrayList, adapter);
+    }
 
-                ImageView hero = view.findViewById(R.id.heroimage);
-                TextView title = view.findViewById(R.id.title);
-                TextView description = view.findViewById(R.id.description);
-                String herourl = arrayList.get(position).getHerourl();
-                MaterialButton button = view.findViewById(R.id.watchlist);
-
-                if (herourl != null && hero != null) {
-                    Glide.with(view)
-                            .load(herourl)
-                            .centerCrop()
-                            .into(hero);
-                    title.setText(arrayList.get(position).getTitle());
-                    description.setText(arrayList.get(position).getDescription());
-                    DataClass currentData = arrayList.get(position);
-                    if (currentData.isAdded()) {
-                        button.setText("Added to Watchlist");
-                        int color = getResources().getColor(R.color.md_theme_light_background);
-                        int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                        button.setBackgroundTintList(ColorStateList.valueOf(color));
-                        button.setTextColor(textcolor);
-                        button.setIconResource(R.drawable.baseline_check_24);
-                        button.setIconTint(ColorStateList.valueOf(textcolor));
-                    } else {
-                        button.setText("Add to Watchlist");
-                        int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                        int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                        button.setBackgroundTintList(ColorStateList.valueOf(color));
-                        button.setTextColor(textcolor);
-                        button.setIconResource(R.drawable.baseline_star_24);
-                        button.setIconTint(ColorStateList.valueOf(textcolor));
-                    }
-                    button.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            if (currentData.isAdded()) {
-                                ExecutorService service = Executors.newSingleThreadExecutor();
-                                service.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        dao_object.deleteDataById(currentData.getKey());
-                                        notify = true;
-
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                currentData.setAdded(false);
-                                                button.setText("Add to Watchlist");
-                                                int color = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                int textcolor = getResources().getColor(R.color.md_theme_light_background);
-                                                button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                button.setTextColor(textcolor);
-                                                button.setIconResource(R.drawable.baseline_star_24);
-                                                button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                loadData("Trending", R.id.trendingRVIEW);
-                                                loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                loadData("TopRated", R.id.topratedRVIEW);
-                                                loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                notify = false;
-                                            }
-                                        });
-                                    }
-                                });
-                            } else {
-                                ExecutorService service = Executors.newSingleThreadExecutor();
-                                service.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        currentData.setAdded(true);
-                                        dao_object.insertOrUpdate(currentData);
-                                        notify = true;
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                button.setText("Added to Watchlist");
-                                                int color = getResources().getColor(R.color.md_theme_light_background);
-                                                int textcolor = getResources().getColor(R.color.md_theme_dark_errorContainer);
-                                                button.setBackgroundTintList(ColorStateList.valueOf(color));
-                                                button.setTextColor(textcolor);
-                                                button.setIconResource(R.drawable.baseline_check_24);
-                                                button.setIconTint(ColorStateList.valueOf(textcolor));
-                                                loadData("Trending", R.id.trendingRVIEW);
-                                                loadData("NetflixOriginals", R.id.netflixoriginalsRVIEW);
-                                                loadData("TopRated", R.id.topratedRVIEW);
-                                                loadData("ActionMovies", R.id.actionmoviesRVIEW);
-                                                loadData("ComedyMovies", R.id.comedymoviesRVIEW);
-                                                loadData("HorrorMovies", R.id.horrormoviesRVIEW);
-                                                loadData("RomanceMovies", R.id.romancemoviesRVIEW);
-                                                notify = false;
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        }
-                    });
-                } else {
-                    Toast.makeText(context, "Error loading movie details", Toast.LENGTH_SHORT).show();
-                }
-
-                popupWindow = new PopupWindow(view, RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                popupWindow.setEnterTransition(new Slide());
-                popupWindow.showAtLocation(view, Gravity.BOTTOM, 0, 0);
-                popupWindow.setExitTransition(new Slide());
-            }
-        });
-
-        Log.e("api1", url);
+    private void fetchMovieData(String url, ArrayList<DataClass> arrayList, Adapter adapter) {
         String baseimageurl = "https://image.tmdb.org/t/p/original";
-
-        Log.e("stringurl", url);
-
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
-                            JSONArray jsonArray = jsonObject.getJSONArray("results");
-                            for (int i = 0; i < jsonObject.getJSONArray("results").length(); i++) {
-                                JSONObject movies = jsonArray.getJSONObject(i);
-                                int key = movies.getInt("id");
+                response -> {
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+                        JSONArray jsonArray = jsonObject.getJSONArray("results");
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            JSONObject movies = jsonArray.getJSONObject(i);
+                            int key = movies.getInt("id");
+                            String imgurl = baseimageurl + movies.getString("poster_path");
+                            String herourl = baseimageurl + movies.getString("backdrop_path");
+                            String title = movies.optString("title", movies.optString("name", movies.optString("original_title")));
+                            String description = movies.getString("overview");
 
-                                String imgurl = baseimageurl + movies.getString("poster_path");
-                                String herourl = baseimageurl + movies.getString("backdrop_path");
-                                String title = "";
-                                if (movies.has("title")) {
-                                    title = movies.getString("title");
-                                } else if (movies.has("name")) {
-                                    title = movies.getString("name");
-                                } else if (movies.has("original_title")) {
-                                    title = movies.getString("original_title");
-                                }
-                                String description = movies.getString("overview");
-
-                                DataClass data = new DataClass(key, imgurl, herourl, title, description, false);
-                                ExecutorService service = Executors.newSingleThreadExecutor();
-                                service.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        List<DataClass> localData = dao_object.getAll();
-                                        DataClass duplicate = dao_object.checkduplicateById(data.getKey());
-                                        if (duplicate != null) {
-                                            data.setAdded(true);
-                                        }
-                                    }
-                                });
-
-                                arrayList.add(data);
-                                adapter.notifyDataSetChanged();
-                                smalladapter.notifyDataSetChanged();
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                            DataClass data = new DataClass(key, imgurl, herourl, title, description, false);
+                            arrayList.add(data);
                         }
+                        adapter.notifyDataSetChanged();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
                     }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(Home.this, "ERROR", Toast.LENGTH_SHORT).show();
-            }
-        });
+                },
+                error -> Toast.makeText(Home.this, "ERROR", Toast.LENGTH_SHORT).show());
 
         queue.add(stringRequest);
     }
 
-    @Override
-    public void onBackPressed() {
-        if (popupWindow != null && popupWindow.isShowing()) {
-            popupWindow.dismiss();
-        } else if (searchflag == 1 && searchView.hasFocus()) {
-            searchView.clearFocus();
-        } else if (searchflag == 1) {
-            ((ViewGroup) v.getParent()).removeView(v);
-            searchflag = 0;
-        } else if (watchlistflag == 1) {
-            watchlistflag = 0;
-            RelativeLayout relativeLayout = findViewById(R.id.watchlistview);
-            relativeLayout.setVisibility(View.INVISIBLE);
-            TabLayout.Tab home = tabLayout.getTabAt(0);
-            if (home != null) {
-                home.select();
-                int tabIconColor = ContextCompat.getColor(Home.this, R.color.md_theme_light_primary);
-                if (home.getIcon() != null) {
-                    home.getIcon().setColorFilter(tabIconColor, PorterDuff.Mode.SRC_IN);
-                }
-            }
-        } else if (popupWindow1 != null && popupWindow1.isShowing()) {
-            popupWindow1.dismiss();
-        } else {
-            super.onBackPressed();
-        }
-    }
 
-    @NonNull
     private BlurAlgorithm getBlurAlgorithm() {
-        BlurAlgorithm algorithm;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            algorithm = new RenderEffectBlur();
+            return new RenderEffectBlur();
         } else {
-            algorithm = new RenderScriptBlur(this);
+            return new RenderScriptBlur(this);
         }
-        return algorithm;
-    }
-
-    private void initView() {
-        tabLayout = findViewById(R.id.tabLayout);
-        bottomBlurView = findViewById(R.id.bottomBlurView);
-        blurroot = findViewById(R.id.main);
-    }
-
-    private void setupBlurView() {
-        final float radius = 25f;
-        final float minBlurRadius = 4f;
-        final float step = 4f;
-
-        final Drawable windowBackground = getWindow().getDecorView().getBackground();
-        BlurAlgorithm algorithm = getBlurAlgorithm();
-
-        bottomBlurView.setupWith(blurroot, new RenderScriptBlur(this))
-                .setFrameClearDrawable(windowBackground)
-                .setBlurRadius(radius);
-
-        int initialProgress = (int) (radius * step);
-    }
-
-    public void hideKeyboardAndClearFocus() {
-        searchView.clearFocus();
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
     }
 }

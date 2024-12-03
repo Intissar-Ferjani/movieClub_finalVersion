@@ -9,4 +9,10 @@
     <style name="ThemeOverlay.Material3.AutoCompleteTextView.Outline" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
     </style>
+    <style name="WhiteSearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:editTextColor">@android:color/white</item>
+        <item name="android:textColorHint">@android:color/white</item>
+    </style>
+
 </resources>

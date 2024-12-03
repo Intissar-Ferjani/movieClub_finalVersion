@@ -30,28 +30,12 @@ public class DataClass {
         return added;
     }
 
-    public void setAdded(boolean added) {
-        this.added = added;
-    }
-
-    public void setKey(int key) {
-        this.key = key;
-    }
-
     public String getUrl() {
         return url;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
     public String getHerourl() {
         return herourl;
-    }
-
-    public void setHerourl(String herourl) {
-        this.herourl = herourl;
     }
 
     public String getTitle() {
@@ -66,11 +50,5 @@ public class DataClass {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public int getId() {
-        return key;
-    }
+    public int getId() {return key;}
 }

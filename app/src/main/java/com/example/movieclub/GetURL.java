@@ -67,7 +67,7 @@ public class GetURL {
         String trailerURL = "";
 
         if (type.equalsIgnoreCase("movie")) {
-            trailerURL = baseURL + "movie/" + id + "/videos?api_key=" + PLACEHOLDER_API_KEY + "&language=en-US";
+            trailerURL = "https://api.themoviedb.org/3/movie/" + id + "/videos?api_key=YOUR_API_KEY";
         } else if (type.equalsIgnoreCase("tv")) {
             trailerURL = baseURL + "tv/" + id + "/season/1/episode/1/videos?api_key=" + PLACEHOLDER_API_KEY + "&language=en-US";
         }
